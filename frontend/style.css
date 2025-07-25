@@ -1,0 +1,27 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 40px;
+}
+
+h1 {
+  text-align: center;
+}
+
+.device-list label {
+  display: block;
+  margin: 4px 0;
+}
+
+button {
+  margin: 8px 4px;
+  padding: 8px 16px;
+  font-size: 1em;
+}
+
+#status {
+  margin-top: 12px;
+}
+
+#status.error {
+  color: red;
+}
