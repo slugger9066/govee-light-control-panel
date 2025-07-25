@@ -2,12 +2,19 @@
 <html>
 <head>
   <title>Govee Control Panel</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <h1>🧠 Govee Control Panel</h1>
 
+  <p>Select the devices you want to control and then use the buttons below.</p>
+
   <h2>Select Devices:</h2>
-  <form id="deviceForm"></form>
+  <div id="deviceList" class="device-list">
+    <form id="deviceForm"></form>
+  </div>
+
+  <div id="status" class="status"></div>
 
   <button onclick="toggleSelected('on')">💡 Turn ON Selected</button>
   <button onclick="toggleSelected('off')">💤 Turn OFF Selected</button>
@@ -15,25 +22,33 @@
   <script>
     // 1. Get devices and build checkboxes
     async function loadDevices() {
-      const res = await fetch("/devices");
-      const data = await res.json();
-      console.log("Devices from backend:", data);
-      const form = document.getElementById("deviceForm");
+      const status = document.getElementById("status");
+      try {
+        const res = await fetch("/devices");
+        const data = await res.json();
+        const form = document.getElementById("deviceForm");
 
-      data.data.devices.forEach((device, index) => {
-        const label = document.createElement("label");
-        label.innerHTML = `
-          <input type="checkbox" name="device" value="${device.device}|${device.model}">
-          ${device.deviceName || "Unnamed Device"} (${device.model})
-        `;
-        form.appendChild(label);
-        form.appendChild(document.createElement("br"));
-      });
+        data.data.devices.forEach((device) => {
+          const label = document.createElement("label");
+          label.innerHTML = `
+            <input type="checkbox" name="device" value="${device.device}|${device.model}">
+            ${device.deviceName || "Unnamed Device"} (${device.model})
+          `;
+          form.appendChild(label);
+          form.appendChild(document.createElement("br"));
+        });
+      } catch (err) {
+        status.textContent = "Failed to load devices.";
+        status.classList.add("error");
+      }
     }
 
     // 2. Send command to selected devices
     async function toggleSelected(state) {
       const checkboxes = document.querySelectorAll("input[name='device']:checked");
+      const status = document.getElementById("status");
+      status.textContent = "";
+      status.classList.remove("error");
 
       const selectedDevices = Array.from(checkboxes).map(cb => {
         const [device, model] = cb.value.split("|");
@@ -41,23 +56,28 @@
       });
 
       if (selectedDevices.length === 0) {
-        alert("Please select at least one device.");
+        status.textContent = "Please select at least one device.";
+        status.classList.add("error");
         return;
       }
 
-      for (const { device, model } of selectedDevices) {
-        await fetch("/control", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            device,
-            model,
-            command: { name: "turn", value: state }
-          })
-        });
+      try {
+        for (const { device, model } of selectedDevices) {
+          await fetch("/control", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              device,
+              model,
+              command: { name: "turn", value: state }
+            })
+          });
+        }
+        status.textContent = `Turned ${state} ${selectedDevices.length} device(s).`;
+      } catch (err) {
+        status.textContent = "Failed to send command.";
+        status.classList.add("error");
       }
-
-      alert(`Turned ${state} ${selectedDevices.length} device(s).`);
     }
 
     // Load devices when the page loads
