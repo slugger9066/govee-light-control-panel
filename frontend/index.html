@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Govee Control Panel</title>
+</head>
+<body>
+  <h1>🧠 Govee Control Panel</h1>
+
+  <h2>Select Devices:</h2>
+  <form id="deviceForm"></form>
+
+  <button onclick="toggleSelected('on')">💡 Turn ON Selected</button>
+  <button onclick="toggleSelected('off')">💤 Turn OFF Selected</button>
+
+  <script>
+    // 1. Get devices and build checkboxes
+    async function loadDevices() {
+      const res = await fetch("/devices");
+      const data = await res.json();
+      console.log("Devices from backend:", data);
+      const form = document.getElementById("deviceForm");
+
+      data.data.devices.forEach((device, index) => {
+        const label = document.createElement("label");
+        label.innerHTML = `
+          <input type="checkbox" name="device" value="${device.device}|${device.model}">
+          ${device.deviceName || "Unnamed Device"} (${device.model})
+        `;
+        form.appendChild(label);
+        form.appendChild(document.createElement("br"));
+      });
+    }
+
+    // 2. Send command to selected devices
+    async function toggleSelected(state) {
+      const checkboxes = document.querySelectorAll("input[name='device']:checked");
+
+      const selectedDevices = Array.from(checkboxes).map(cb => {
+        const [device, model] = cb.value.split("|");
+        return { device, model };
+      });
+
+      if (selectedDevices.length === 0) {
+        alert("Please select at least one device.");
+        return;
+      }
+
+      for (const { device, model } of selectedDevices) {
+        await fetch("/control", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            device,
+            model,
+            command: { name: "turn", value: state }
+          })
+        });
+      }
+
+      alert(`Turned ${state} ${selectedDevices.length} device(s).`);
+    }
+
+    // Load devices when the page loads
+    window.onload = loadDevices;
+  </script>
+</body>
+
+</html>
