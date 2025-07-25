@@ -13,7 +13,11 @@ const PORT = 3000;
 
 const GOVEE_API_KEY = process.env.GOVEE_API_KEY;
 const BASE_URL = "https://developer-api.govee.com/v1";
-console.log("Using Govee Key:", process.env.GOVEE_API_KEY);
+if (!GOVEE_API_KEY) {
+  console.error("Error: GOVEE_API_KEY is not defined. Please set it in your environment.");
+  process.exit(1);
+}
+console.log("Govee API key loaded");
 // Setup to understand JSON and serve files
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "../frontend")));
